@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/marketing", "destination": "/api/r?route=marketing" },
+    { "source": "/gtm",       "destination": "/api/r?route=gtm" },
+    { "source": "/hubspot",   "destination": "/api/r?route=hubspot" },
+    { "source": "/ghl",       "destination": "/api/r?route=ghl" },
+    { "source": "/consult",   "destination": "/api/r?route=consult" },
+    { "source": "/(.*)",      "destination": "/index.html" }
+  ]
+}
