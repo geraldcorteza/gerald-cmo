@@ -414,7 +414,7 @@ export default function App() {
   }, []);
 
   const callIntakeAPI = async (msgs) => {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -517,7 +517,7 @@ export default function App() {
     setPhase("generating");
     const contextDump = hist.filter(m => m.role === "user").map(m => m.content).join("\n\n");
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
