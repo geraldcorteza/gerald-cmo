@@ -488,16 +488,24 @@ export default function App() {
         messages: msgs,
       }),
     });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
+    if (data.error) throw new Error(data.error.message || "API error");
     return data.content?.map(b => b.text || "").join("") || "";
   };
 
   const parseResponse = (raw) => {
     try {
-      const match = raw.match(/\{[\s\S]*?\}/);
+      // Strip markdown fences first
+      const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      // Greedy match — finds the outermost complete JSON object
+      const match = cleaned.match(/\{[\s\S]*\}/);
       if (match) return JSON.parse(match[0]);
     } catch {}
-    return { status: "asking", question: raw.trim(), progress: 1 };
+    // Fallback: treat raw text as a question
+    const text = raw.trim();
+    if (text) return { status: "asking", question: text, progress: 1 };
+    return null;
   };
 
   const GERALD_OPENING = `Hey there — great to have you here. I'll be walking you through a quick intake conversation so I can build a focused, high-impact Go-To-Market strategy tailored specifically to your business. We'll keep this conversational and to the point — no fluff.\n\nLet's dive right in: Tell me about your product or service. What does it do, and what's the core problem it solves for your customers?`;
@@ -551,9 +559,34 @@ export default function App() {
         setIsTyping(false);
         scrollBottom();
       }
-    } catch {
-      setMessages([...newMsgs, { role: "ai", text: "I had a connection issue — could you resend that?" }]);
-      setIsTyping(false);
+    } catch (err) {
+      console.warn("Intake API error, retrying once...", err);
+      // Auto-retry once after a short delay
+      try {
+        await new Promise(r => setTimeout(r, 1500));
+        const raw2 = await callIntakeAPI(newHistory);
+        const parsed2 = parseResponse(raw2);
+        if (parsed2?.status === "ready") {
+          const closing = `Perfect — I have everything I need. Give me just a moment to put your strategy together...`;
+          setMessages([...newMsgs, { role: "ai", text: closing }]);
+          setProgress(100);
+          setIsTyping(false);
+          scrollBottom();
+          intakeHistory.current = [...newHistory, { role: "assistant", content: raw2 }];
+          setTimeout(() => runStrategyGeneration(newHistory, parsed2.summary || ""), 1400);
+        } else {
+          const q = parsed2?.question || "Could you expand on that a bit more?";
+          setMessages([...newMsgs, { role: "ai", text: q }]);
+          intakeHistory.current = [...newHistory, { role: "assistant", content: raw2 }];
+          if (parsed2?.progress) setProgress((parsed2.progress / 6) * 100);
+          setIsTyping(false);
+          scrollBottom();
+        }
+      } catch (err2) {
+        console.error("Intake retry also failed:", err2);
+        setMessages([...newMsgs, { role: "ai", text: "Got a brief connection hiccup — just hit send again and we'll pick right up." }]);
+        setIsTyping(false);
+      }
     }
   };
 
