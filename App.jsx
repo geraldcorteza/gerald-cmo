@@ -478,11 +478,11 @@ export default function App() {
   }, []);
 
   const callIntakeAPI = async (msgs) => {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         system: INTAKE_SYSTEM,
         messages: msgs,
@@ -490,8 +490,8 @@ export default function App() {
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message || "API error");
-    return data.content?.map(b => b.text || "").join("") || "";
+    if (data.error) throw new Error(data.error.message || 'API error');
+    return data.content?.map(b => b.text || '').join('') || '';
   };
 
   const parseResponse = (raw) => {
@@ -614,14 +614,14 @@ export default function App() {
     setPhase("generating");
     const contextDump = hist.filter(m => m.role === "user").map(m => m.content).join("\n\n");
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 4000,
           system: STRATEGY_SYSTEM,
-          messages: [{ role: "user", content: `Client intake:\n\n${contextDump}\n\nSummary: ${summary}\n\nGenerate the OGSM JSON now. Return ONLY raw JSON — no markdown, no code fences, no explanation.` }],
+          messages: [{ role: 'user', content: `Client intake:\n\n${contextDump}\n\nSummary: ${summary}\n\nGenerate the OGSM JSON now. Return ONLY raw JSON — no markdown, no code fences, no explanation.` }],
         }),
       });
       const data = await res.json();
